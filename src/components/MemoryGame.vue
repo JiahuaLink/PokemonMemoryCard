@@ -35,8 +35,9 @@
       <div class="images-grid">
         <div v-for="(image, index) in imagesToShow" :key="index" :class="{ hide: image.hide }"
              @click="selectImage(image)">
-          <div class="choice-image" :class="getTypeClass(image.typeNames)">
-            <img :src="image.src" :alt="`Choice ${index + 1}`"/>
+          <div class="choice-image">
+
+            <img :src="image.src" :alt="`Choice ${index + 1}`" :class="getTypeClass(image.typeNames)"/>
             <div v-if="showImageInfo" class="image-info">
               <div v-if="showImageName">{{ image.name }}</div>
               <div class="type-badges">
@@ -356,10 +357,9 @@ export default {
 .images-grid img {
   width: 250px; /* 调整图片大小 */
   height: 250px;
-  border: 1px solid #ddd;
-  margin: 5px;
+  margin: 3px;
   object-fit: cover;
-  /*box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); !* 可选：添加轻微的阴影效果 *!*/
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 可选：添加轻微的阴影效果 */
 }
 
 .images-to-remember {
@@ -391,10 +391,10 @@ export default {
 
 .choice-image {
   cursor: pointer;
-  margin: 5px;
+  margin: 3px;
   /*transition: transform 0.3s ease, box-shadow 0.3s ease; !* 添加 transform 和 box-shadow 的过渡效果 *!*/
   position: relative;
-  flex-basis: calc(50% - 10px); /* 调整为每行两张图片 */
+  flex-basis: calc(33% - 10px); /* 调整为每行两张图片 */
   transition: border-color 0.3s; /* 平滑过渡效果 */
 }
 
@@ -428,6 +428,7 @@ export default {
   border-radius: 10px;
   text-align: center;
   padding: 30px; /* 增加一些内部空间 */
+  width: 50%;
 }
 
 /* 媒体查询，适应大屏幕 */
@@ -439,8 +440,8 @@ export default {
   }
 
   .choice-image {
-    flex-basis: calc(25% - 10px); /* 每行两张图片 */
-    margin: 5px;
+    flex-basis: calc(33% - 10px); /* 每排三张图片，减去边距 */
+    margin: 2px;
   }
 
   .images-to-remember img.hide {
@@ -474,7 +475,7 @@ export default {
   /* 手机端的断点，可以根据需要调整 */
   .choice-image {
     flex-basis: calc(33% - 10px); /* 每排三张图片，减去边距 */
-    margin: 5px;
+    margin: 2px;
   }
 
   .choice-image.hide {
@@ -535,7 +536,22 @@ export default {
   height: 30px;
   margin-right: 10px;
 }
+@media (max-width: 376px) {
+  .choice-image {
+    flex-basis: calc(33% - 10px); /* 每排三张图片，减去边距 */
+    margin: 3px;
+  }
+  /* 其他样式调整 */
+}
 
+@media (max-width: 767px) {
+  /* 手机端的断点，可以根据需要调整 */
+  .choice-image {
+    flex-basis: calc(33% - 10px); /* 每排三张图片，减去边距 */
+    margin: 3px;
+  }
+  /* 其他样式调整 */
+}
 @media (max-width: 375px) {
   .timer, .score {
     top: 5px;
@@ -733,24 +749,24 @@ export default {
 .fairy {
   background-color: #EE99AC;
 }
-.border-normal { border: 2px solid rgba(168, 168, 120, 0.5); }
-.border-fire { border: 2px solid rgba(240, 128, 48, 0.5); }
-.border-water { border: 2px solid rgba(104, 144, 240, 0.5); }
-.border-electric { border: 2px solid rgba(248, 208, 48, 0.5); }
-.border-grass { border: 2px solid rgba(120, 200, 80, 0.5); }
-.border-ice { border: 2px solid rgba(152, 216, 216, 0.5); }
-.border-fighting { border: 2px solid rgba(192, 48, 40, 0.5); }
-.border-poison { border: 2px solid rgba(160, 64, 160, 0.5); }
-.border-ground { border: 2px solid rgba(224, 192, 104, 0.5); }
-.border-flying { border: 2px solid rgba(168, 144, 240, 0.5); }
-.border-psychic { border: 2px solid rgba(248, 88, 136, 0.5); }
-.border-bug { border: 2px solid rgba(168, 184, 32, 0.5); }
-.border-rock { border: 2px solid rgba(184, 160, 56, 0.5); }
-.border-ghost { border: 2px solid rgba(112, 88, 152, 0.5); }
-.border-dragon { border: 2px solid rgba(112, 56, 248, 0.5); }
-.border-dark { border: 2px solid rgba(112, 88, 72, 0.5); }
-.border-steel { border: 2px solid rgba(184, 184, 208, 0.5); }
-.border-fairy { border: 2px solid rgba(238, 153, 172, 0.5); }
+.border-normal { border: 4px solid rgba(175, 175, 129, 0.5);border-radius: 10px; }
+.border-fire { border: 4px solid rgba(240, 128, 48, 0.5); border-radius: 10px;}
+.border-water { border: 4px solid rgba(104, 144, 240, 0.5);border-radius: 10px; }
+.border-electric { border: 4px solid rgba(241, 202, 46, 0.5);border-radius: 10px; }
+.border-grass { border: 4px solid rgba(120, 200, 80, 0.5); border-radius: 10px;}
+.border-ice { border: 4px solid rgba(152, 216, 216, 0.5); border-radius: 10px;}
+.border-fighting { border: 4px solid rgba(192, 48, 40, 0.5); border-radius: 10px;}
+.border-poison { border: 4px solid rgba(160, 64, 160, 0.5); border-radius: 10px;}
+.border-ground { border: 4px solid rgba(225, 191, 96, 0.5); border-radius: 10px;}
+.border-flying { border: 4px solid rgba(168, 144, 240, 0.5); border-radius: 10px;}
+.border-psychic { border: 4px solid rgba(248, 88, 136, 0.5); border-radius: 10px;}
+.border-bug { border: 4px solid rgba(168, 184, 32, 0.5); border-radius: 10px;}
+.border-rock { border: 4px solid rgba(184, 160, 56, 0.5); border-radius: 10px;}
+.border-ghost { border: 4px solid rgba(112, 88, 152, 0.5); border-radius: 10px;}
+.border-dragon { border: 4px solid rgba(112, 56, 248, 0.5); border-radius: 10px;}
+.border-dark { border: 4px solid rgba(112, 88, 72, 0.5); border-radius: 10px;}
+.border-steel { border: 4px solid rgba(184, 184, 208, 0.5); border-radius: 10px;}
+.border-fairy { border: 4px solid rgba(238, 153, 172, 0.5); border-radius: 10px;}
 .lives img {
   width: 30px;
   height: 30px;
