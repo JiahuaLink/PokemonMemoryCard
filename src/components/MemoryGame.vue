@@ -35,7 +35,7 @@
       <div class="images-grid">
         <div v-for="(image, index) in imagesToShow" :key="index" :class="{ hide: image.hide }"
              @click="selectImage(image)">
-          <div class="choice-image">
+          <div class="choice-image" :class="getTypeClass(image.typeNames)">
             <img :src="image.src" :alt="`Choice ${index + 1}`"/>
             <div v-if="showImageInfo" class="image-info">
               <div v-if="showImageName">{{ image.name }}</div>
@@ -88,6 +88,7 @@ export default {
   data() {
     return {
       showRemenberImage: false,
+      maxPokemonIndex: 252,
       gameTitle: '宝可梦记忆大师',
       startButtonText: '开始游戏',
       showChoices: false,
@@ -151,15 +152,13 @@ export default {
         class: type.trim().toLowerCase(),
         name: this.typeMapping[type.trim().toLowerCase()] || type.trim()
       }));
-    }
+    },
 
 
   },
   created() {
-
     this.loadImages();
     this.isGameOver = true;
-
   },
   methods: {
     startGame() {
@@ -187,18 +186,21 @@ export default {
       this.stopBackgroundSound();
       this.playGameOverSound();
     },
-
     parseTypes(typeNames) {
       return typeNames.split(',').map(type => ({
         class: type.trim().toLowerCase(),
         name: this.typeMapping[type.trim().toLowerCase()] || type.trim()
       }));
     },
+    getTypeClass(typeNames) {
+      const firstType = typeNames.split(',')[0].trim().toLowerCase();
+      return `border-${firstType}`;
+    },
     loadImages() {
       const baseUrl = 'https://www.pokemon.cn/play/resources/pokedex';
       this.allImages = pokemonData.pokemons
           .filter(pokemon => pokemon.zukan_sub_id !== 1) // 过滤掉 zukan_sub_id 为 1 的宝可梦
-          .slice(0, 151) // 限制数组大小为前 151 个
+          .slice(0, this.maxPokemonIndex) // 限制数组大小为前 151 个
           .map(pokemon => ({
             id: pokemon.zukan_id,
             src: `${baseUrl}${pokemon.file_name}`,
@@ -393,6 +395,7 @@ export default {
   /*transition: transform 0.3s ease, box-shadow 0.3s ease; !* 添加 transform 和 box-shadow 的过渡效果 *!*/
   position: relative;
   flex-basis: calc(50% - 10px); /* 调整为每行两张图片 */
+  transition: border-color 0.3s; /* 平滑过渡效果 */
 }
 
 .choice-image.hide {
@@ -730,7 +733,24 @@ export default {
 .fairy {
   background-color: #EE99AC;
 }
-
+.border-normal { border: 2px solid rgba(168, 168, 120, 0.5); }
+.border-fire { border: 2px solid rgba(240, 128, 48, 0.5); }
+.border-water { border: 2px solid rgba(104, 144, 240, 0.5); }
+.border-electric { border: 2px solid rgba(248, 208, 48, 0.5); }
+.border-grass { border: 2px solid rgba(120, 200, 80, 0.5); }
+.border-ice { border: 2px solid rgba(152, 216, 216, 0.5); }
+.border-fighting { border: 2px solid rgba(192, 48, 40, 0.5); }
+.border-poison { border: 2px solid rgba(160, 64, 160, 0.5); }
+.border-ground { border: 2px solid rgba(224, 192, 104, 0.5); }
+.border-flying { border: 2px solid rgba(168, 144, 240, 0.5); }
+.border-psychic { border: 2px solid rgba(248, 88, 136, 0.5); }
+.border-bug { border: 2px solid rgba(168, 184, 32, 0.5); }
+.border-rock { border: 2px solid rgba(184, 160, 56, 0.5); }
+.border-ghost { border: 2px solid rgba(112, 88, 152, 0.5); }
+.border-dragon { border: 2px solid rgba(112, 56, 248, 0.5); }
+.border-dark { border: 2px solid rgba(112, 88, 72, 0.5); }
+.border-steel { border: 2px solid rgba(184, 184, 208, 0.5); }
+.border-fairy { border: 2px solid rgba(238, 153, 172, 0.5); }
 .lives img {
   width: 30px;
   height: 30px;
