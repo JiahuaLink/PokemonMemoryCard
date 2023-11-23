@@ -1,4 +1,4 @@
-# my-memory-game
+# pokemon-memory-game
 
 ## Project setup
 ```
