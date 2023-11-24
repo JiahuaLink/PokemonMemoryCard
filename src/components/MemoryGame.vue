@@ -99,7 +99,7 @@ export default {
   data() {
     return {
       showRemenberImage: false,
-      maxPokemonIndex: 252,
+      maxPokemonIndex: 1000,
       gameTitle: '宝可梦记忆大师',
       startButtonText: '开始游戏',
       showChoices: false,
