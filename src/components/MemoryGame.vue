@@ -1,6 +1,10 @@
 <template>
 
   <div class="memory-game">
+    <div v-if="isLoading" class="loading-screen">
+      加载中，请稍候...
+      <!-- 可以添加一些动画或者进度条 -->
+    </div>
     <!--时间展示区-->
     <div class="timer">
       <img :src="timerIcon" alt="Time Left"/>
@@ -100,6 +104,7 @@ export default {
       startButtonText: '开始游戏',
       showChoices: false,
       showImageName: false,
+      isLoading: true,
       showImageInfo: false,
       hideMemoryImage: false, // 新增属性，用于控制记忆图片的隐藏
       showBrokenHeart: false, // 控制心碎动态图的显示
@@ -166,23 +171,47 @@ export default {
     },
   },
   created() {
+
     this.loadImages();
     this.isGameOver = true;
   },
   methods: {
+    startRound() {
+      const roundImageUrls = this.getCurrentRoundImageUrls();
+      this.preloadImages(roundImageUrls).then(() => {
+        // 图片加载完成，可以开始或继续回合
+        // 更新游戏状态，显示回合内容等
+      });
+    },
+    getCurrentRoundImageUrls() {
+      // 基于当前回合的逻辑返回需要的图片 URL 数组
+      // 这里是一个示例，具体逻辑可能需要根据您的游戏设计调整
+      const roundImages = this.allImages.slice(0, this.currentRoundImageCount);
+      return roundImages.map(image => image.src);
+    },
+    loadInitialRoundImages() {
+      const initialRoundImageUrls = this.getCurrentRoundImageUrls(); // 获取第一轮的图片 URL
+      return this.preloadImages(initialRoundImageUrls);
+    },
     startGame() {
-      this.playClickSound()
+
       console.log("starting game");
-      this.isGameOver = false;
-      this.initialShow(); // 如果这个方法包含了必要的初始化步骤
-      this.timeLeft = this.playTime;
-      this.score = 0;
-      this.round = 1;
-      this.lives = 5
-      this.errorTime = 0;
-      this.currentImageIndex = 0;
-      this.stopGameOverSound();
-      this.playBgmSound();
+      this.loadInitialRoundImages().then(() => {
+        // 图片加载完成后再开始游戏
+        this.isLoading = false;
+        this.playClickSound();
+        console.log("starting game");
+        this.isGameOver = false;
+        this.initialShow(); // 初始化显示
+        this.timeLeft = this.playTime;
+        this.score = 0;
+        this.round = 1;
+        this.lives = 5;
+        this.errorTime = 0;
+        this.currentImageIndex = 0;
+        this.stopGameOverSound();
+        this.playBgmSound();
+      });
     },
     endGame() {
       clearInterval(this.timer);
@@ -226,6 +255,24 @@ export default {
     getTypeClass(typeNames) {
       const firstType = typeNames.split(',')[0].trim().toLowerCase();
       return `border-${firstType}`;
+    },
+    // 预加载指定的图片
+    preloadImages(imageUrls) {
+      let loadedCount = 0;
+      const totalImages = imageUrls.length;
+
+      return new Promise((resolve) => {
+        imageUrls.forEach(url => {
+          const img = new Image();
+          img.onload = img.onerror = () => {
+            loadedCount++;
+            if (loadedCount === totalImages) {
+              resolve(); // 当所有指定图片加载完成时，解决 Promise
+            }
+          };
+          img.src = url;
+        });
+      });
     },
     loadImages() {
       const baseUrl = 'https://www.pokemon.cn/play/resources/pokedex';
@@ -381,7 +428,15 @@ export default {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   overflow: hidden; /* 防止内容溢出容器 */
 }
-
+.loading-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  font-size: 20px;
+  color: #333;
+}
 .image-info {
   display: flex;
   align-items: center; /* 垂直居中对齐 */
