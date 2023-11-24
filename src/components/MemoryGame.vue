@@ -115,7 +115,7 @@ export default {
       previousTypeName: '',
       round: 0,//默认关卡
       timeLeft: 0.00,
-      playTime: 600.00,
+      playTime: 30.00,
       lives: 3,
       score: 0,
       accessScore: 30,//通关分数
