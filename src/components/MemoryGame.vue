@@ -37,7 +37,7 @@
              @click="selectImage(image)">
           <div class="choice-image">
 
-            <img :src="image.src" :alt="`Choice ${index + 1}`" :class="getTypeClass(image.typeNames)"/>
+            <img  :src="image.src" :alt="`Choice ${index + 1}`" :class="getTypeClass(image.typeNames)"/>
             <div v-if="showImageInfo" class="image-info">
               <div v-if="showImageName">{{ image.name }}</div>
               <div class="type-badges">
@@ -108,7 +108,7 @@ export default {
       round: 0,
       secondImage: null, // 第二张要记住的图片
       timeLeft: 0.00,
-      playTime: 30.00,
+      playTime: 600.00,
       lives: 3,
       score: 0,
       timer: null,
@@ -303,6 +303,8 @@ export default {
         if (this.errorTime >= this.maxErrorTime) {
           this.endGame();
         }
+      }else {
+        this.timeLeft+=0.03
       }
 
       this.playSound(isCorrect);
@@ -319,7 +321,7 @@ export default {
         this.setupGame();
         this.hideMemoryImage = false; // 显示记忆图片
         this.showImageName = false;// 不显示图片名字
-      }, 500);
+      }, 300);
     }
   }
 };
@@ -360,6 +362,7 @@ export default {
   margin: 3px;
   object-fit: cover;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 可选：添加轻微的阴影效果 */
+
 }
 
 .images-to-remember {
@@ -368,12 +371,14 @@ export default {
   align-items: center; /* 水平居中对齐 */
   justify-content: center; /* 垂直居中对齐 */
   margin-bottom: 20px; /* 添加一些底部边距 */
+  animation: slideIn 0.5s ease-out;
 }
 
 .images-to-remember img {
   width: 200px; /* 调整图片大小 */
   height: 200px;
   margin-bottom: 10px; /* 在图片和文字之间添加一些间距 */
+
 }
 
 .images-to-remember img.hide {
@@ -391,11 +396,21 @@ export default {
 
 .choice-image {
   cursor: pointer;
-  margin: 3px;
+  margin: 2px;
   /*transition: transform 0.3s ease, box-shadow 0.3s ease; !* 添加 transform 和 box-shadow 的过渡效果 *!*/
   position: relative;
   flex-basis: calc(33% - 10px); /* 调整为每行两张图片 */
-  transition: border-color 0.3s; /* 平滑过渡效果 */
+  transition: border-color 0.9s; /* 平滑过渡效果 */
+  animation: slideIn 0.5s ease-out;
+
+}
+@keyframes slideIn {
+  from {
+    margin: -100px;
+  }
+  to {
+    margin: 2px;
+  }
 }
 
 .choice-image.hide {
