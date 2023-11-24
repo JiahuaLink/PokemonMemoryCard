@@ -108,7 +108,7 @@ export default {
       round: 0,
       secondImage: null, // 第二张要记住的图片
       timeLeft: 0.00,
-      playTime: 600.00,
+      playTime: 30.00,
       lives: 3,
       score: 0,
       timer: null,
