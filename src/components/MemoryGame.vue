@@ -37,7 +37,7 @@
              @click="selectImage(image)">
           <div class="choice-image">
 
-            <img  :src="image.src" :alt="`Choice ${index + 1}`" :class="getTypeClass(image.typeNames)"/>
+            <img :src="image.src" :alt="`Choice ${index + 1}`" :class="getTypeClass(image.typeNames)"/>
             <div v-if="showImageInfo" class="image-info">
               <div v-if="showImageName">{{ image.name }}</div>
               <div class="type-badges">
@@ -55,8 +55,14 @@
     <div class="game-menu-popup" v-if="isGameOver">
       <div class="popup-content">
         <h2>{{ gameTitle }}</h2>
+        <h3 style="color: #40ad43">{{ playTime }}秒内答对{{accessScore}}分即可通关</h3>
+        <h3 style="color: #da4a2b">答对1题加{{addTime}}分</h3>
+
         <div class="broken-heart" v-if="showBrokenHeart">
           <img :src="brokenHeartIcon" alt="Broken Heart"/>
+        </div>
+        <div class="broken-heart" v-if="showGoodHeart">
+          <img :src="heartIcon" alt="Heart"/>
         </div>
         <p>得分 {{ score }}</p>
         <p>回合数 {{ round }}</p>
@@ -97,6 +103,7 @@ export default {
       showImageInfo: false,
       hideMemoryImage: false, // 新增属性，用于控制记忆图片的隐藏
       showBrokenHeart: false, // 控制心碎动态图的显示
+      showGoodHeart: false, // 控制心动动态图的显示
       allImages: [],
       currentImageIndex: 0,
       currentImage: '',
@@ -105,12 +112,15 @@ export default {
       isGameOver: false,
       imagesToShow: [],
       previousImage: '',
-      round: 0,
-      secondImage: null, // 第二张要记住的图片
+      previousTypeName: '',
+      round: 0,//默认关卡
       timeLeft: 0.00,
-      playTime: 30.00,
+      playTime: 600.00,
       lives: 3,
       score: 0,
+      accessScore: 30,//通关分数
+      volume: 0.1, // 默认音量
+      addTime:0.5,//答对额外加秒数 s
       timer: null,
       errorTime: 0,
       maxErrorTime: 3,
@@ -144,7 +154,7 @@ export default {
         'fairy': '妖精',
 
       },
-      volume: 0.6, // 默认音量
+
     };
   },
   computed: {
@@ -154,8 +164,6 @@ export default {
         name: this.typeMapping[type.trim().toLowerCase()] || type.trim()
       }));
     },
-
-
   },
   created() {
     this.loadImages();
@@ -170,7 +178,8 @@ export default {
       this.timeLeft = this.playTime;
       this.score = 0;
       this.round = 1;
-      this.lives = 3
+      this.lives = 5
+      this.errorTime = 0;
       this.currentImageIndex = 0;
       this.stopGameOverSound();
       this.playBgmSound();
@@ -178,14 +187,35 @@ export default {
     endGame() {
       clearInterval(this.timer);
       this.isGameOver = true;
-      this.gameTitle = '游戏结束';
+      if (this.score < 10) {
+        this.gameTitle = '游戏结束,你是笨蛋，建议重开';
+        this.showBrokenHeart = true;
+        this.showGoodHeart = false;
+        this.playGameOverSound()
+      } else if (this.score >= 10 && this.score < 15) {
+        this.gameTitle = '闯关失败,您的记忆水平为：一般';
+        this.showBrokenHeart = true;
+        this.showGoodHeart = false;
+        this.playGameOverSound()
+      } else if (this.score < this.accessScore) {
+        this.gameTitle = '闯关失败,您的记忆水平为：中等';
+        this.showBrokenHeart = true;
+        this.showGoodHeart = false;
+        this.playGameOverSound()
+      } else if (this.score >= this.accessScore) {
+        this.gameTitle = '闯关成功,您的记忆水平为：顶级';
+        this.showBrokenHeart = true;
+        this.showGoodHeart = false;
+        this.playGameOverSound()
+      }
+
       this.startButtonText = '重新开始';
-      this.showBrokenHeart = true; // 显示心碎动态图
+
       this.showChoices = false;
       this.showRemenberImage = false;
       this.errorTime = 0; // 重置错误次数
       this.stopBackgroundSound();
-      this.playGameOverSound();
+
     },
     parseTypes(typeNames) {
       return typeNames.split(',').map(type => ({
@@ -232,9 +262,14 @@ export default {
       this.backgroundSound.pause();
       this.backgroundSound.currentTime = 0; // 重置音频到开始位置
     },
-    playSound(isCorrect) {
+    playIsCorrectSound(isCorrect) {
       const sound = isCorrect ? this.correctSound : this.wrongSound;
       sound.play();
+    },
+    stopPlayIsCorrectSound(isCorrect) {
+      const sound = isCorrect ? this.correctSound : this.wrongSound;
+      sound.pause();
+      sound.currentTime = 0; // 重置音频到开始位置
     },
     playClickSound() {
       // 假设你已经有了点击音效的音频文件
@@ -259,6 +294,7 @@ export default {
     setupGame() {
       // 设置前一张图片和下一张要记忆的图片
       this.previousImage = this.currentImage;
+      this.previousTypeName = this.currentTypeName;
       this.currentImageIndex = Math.floor(Math.random() * this.allImages.length);
       this.currentImage = this.allImages[this.currentImageIndex].src;
       this.currentImageName = this.allImages[this.currentImageIndex].name;
@@ -267,24 +303,27 @@ export default {
       // 动态计算要显示的图片数量
       let numberOfImagesToShow;
       if (this.round <= 2) {
-        numberOfImagesToShow = 2;
+        numberOfImagesToShow = 20;
       } else if (this.round <= 4) {
-        numberOfImagesToShow = 5;
+        numberOfImagesToShow = 20;
       } else if (this.round <= 6) {
-        numberOfImagesToShow = 6;
+        numberOfImagesToShow = 20;
       } else if (this.round <= 9) {
-        numberOfImagesToShow = 9;
+        numberOfImagesToShow = 20;
       } else {
-        numberOfImagesToShow = 12; // 从第7回合开始，始终显示8张图片
+        numberOfImagesToShow = 20; // 从第7回合开始，始终显示8张图片
       }
 
       // 获取随机图片列表
       this.imagesToShow = this.getRandomImages(this.previousImage, numberOfImagesToShow);
     },
 
+
     getRandomImages(previousImage, numberOfImages) {
+      let currentType = this.previousTypeName.split(',')[0];
       let images = this.allImages
           .filter(image => image.src !== previousImage)
+          .filter(image => image.typeNames.split(',')[0] === currentType)
           .sort(() => 0.5 - Math.random())
           .slice(0, numberOfImages - 1);
       images.push(this.allImages.find(image => image.src === previousImage));
@@ -296,18 +335,17 @@ export default {
       this.score += isCorrect ? 1 : -1;
       if (!isCorrect) {
         this.errorTime += 1;
+        this.timeLeft -= this.addTime;
         this.lives -= 1; // 减少一个生命值
         if (this.lives <= 0) {
           this.endGame(); // 如果生命值耗尽，则结束游戏
         }
-        if (this.errorTime >= this.maxErrorTime) {
-          this.endGame();
-        }
-      }else {
-        this.timeLeft+=0.03
+
+      } else {
+        this.timeLeft += this.addTime;
       }
 
-      this.playSound(isCorrect);
+      this.playIsCorrectSound(isCorrect);
       this.showImageName = true;
       this.imagesToShow = this.imagesToShow.map(image => ({
         ...image,
@@ -322,6 +360,7 @@ export default {
         this.hideMemoryImage = false; // 显示记忆图片
         this.showImageName = false;// 不显示图片名字
       }, 300);
+
     }
   }
 };
@@ -357,8 +396,8 @@ export default {
 }
 
 .images-grid img {
-  width: 250px; /* 调整图片大小 */
-  height: 250px;
+  width: 400px; /* 调整图片大小 */
+  height: 400px;
   margin: 3px;
   object-fit: cover;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 可选：添加轻微的阴影效果 */
@@ -375,8 +414,8 @@ export default {
 }
 
 .images-to-remember img {
-  width: 200px; /* 调整图片大小 */
-  height: 200px;
+  width: 400px; /* 调整图片大小 */
+  height: 400px;
   margin-bottom: 10px; /* 在图片和文字之间添加一些间距 */
 
 }
@@ -393,6 +432,9 @@ export default {
   color: #333; /* 设置文字颜色，可根据需要调整 */
 }
 
+.choices {
+  width: 90%;
+}
 
 .choice-image {
   cursor: pointer;
@@ -404,6 +446,7 @@ export default {
   animation: slideIn 0.5s ease-out;
 
 }
+
 @keyframes slideIn {
   from {
     margin: -100px;
@@ -443,20 +486,103 @@ export default {
   border-radius: 10px;
   text-align: center;
   padding: 30px; /* 增加一些内部空间 */
-  width: 50%;
+  width: 60%;
 }
+@media (min-width: 375px) {
+  .timer, .score {
+    top: 5px;
+    font-size: 14px;
+  }
 
+  .timer {
+    right: 5px;
+  }
+
+  .timer img, .score img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .score {
+    left: 5px;
+  }
+
+  .score {
+    top: 5px;
+    left: 5px;
+    font-size: 16px;
+  }
+
+  .score img {
+    width: 25px;
+    height: 25px;
+  }
+
+  .choice-image.hide {
+    opacity: 0; /* 使图片完全透明 */
+    visibility: hidden; /* 隐藏图片但保持其占据的空间 */
+    transition: opacity 0.5s; /* 可选：添加渐变效果 */
+  }
+  .choices {
+    width: 100%;
+  }
+
+}
 /* 媒体查询，适应大屏幕 */
 @media (min-width: 376px) {
   .images-to-remember img,
   .images-grid img {
-    width: 100px; /* 减小图片大小 */
-    height: 100px;
+    width: 80px; /* 减小图片大小 */
+    height: 80px;
   }
-
+  .choices {
+    width: 100%;
+  }
   .choice-image {
     flex-basis: calc(33% - 10px); /* 每排三张图片，减去边距 */
     margin: 2px;
+  }
+
+  .images-to-remember img.hide {
+    visibility: hidden; /* 隐藏图片但保持其占据的空间 */
+    opacity: 0; /* 使图片完全透明 */
+    transition: opacity 1s; /* 可选：添加渐变效果 */
+  }
+
+
+  .choice-image.hide {
+    opacity: 0; /* 使图片完全透明 */
+    visibility: hidden; /* 隐藏图片但保持其占据的空间 */
+    transition: opacity 0.5s; /* 可选：添加渐变效果 */
+  }
+
+  .choice-image:nth-child(n+5) {
+    flex-basis: calc(33% - 10px); /* 调整为每行两张图片 */
+  }
+
+  .choice-image:nth-child(n+7) {
+    flex-basis: calc(12.5% - 10px); /* 每行八张图片 */
+  }
+
+  .imageName {
+    font-size: 18px; /* 在小屏幕上减小文字大小 */
+    font-weight: bolder;
+  }
+}
+
+/* 媒体查询，适应大屏幕 */
+@media (min-width: 390px) {
+  .images-to-remember img,
+  .images-grid img {
+    width: 79px; /* 减小图片大小 */
+    height: 79px;
+  }
+  .choices {
+    width: 100%;
+  }
+  .choice-image {
+    flex-basis: calc(33% - 10px); /* 调整为每行两张图片 */
+    margin: 0.1px;
   }
 
   .images-to-remember img.hide {
@@ -481,24 +607,77 @@ export default {
   }
 
   .imageName {
-    font-size: 18px; /* 在小屏幕上减小文字大小 */
+    font-size: 14px; /* 在小屏幕上减小文字大小 */
     font-weight: bolder;
   }
 }
-
-@media (max-width: 767px) {
-  /* 手机端的断点，可以根据需要调整 */
-  .choice-image {
-    flex-basis: calc(33% - 10px); /* 每排三张图片，减去边距 */
-    margin: 2px;
+/* 媒体查询，适应大屏幕 */
+@media (min-width: 414px) {
+  .images-to-remember img,
+  .images-grid img {
+    width:85px; /* 减小图片大小 */
+    height: 85px;
   }
+  .choices {
+    width: 100%;
+  }
+  .choice-image {
+    flex-basis: calc(20% - 2px); /* 每排三张图片，减去边距 */
+    margin: 0.1px;
+  }
+
+  .images-to-remember img.hide {
+    visibility: hidden; /* 隐藏图片但保持其占据的空间 */
+    opacity: 0; /* 使图片完全透明 */
+    transition: opacity 3s; /* 可选：添加渐变效果 */
+  }
+
 
   .choice-image.hide {
     opacity: 0; /* 使图片完全透明 */
     visibility: hidden; /* 隐藏图片但保持其占据的空间 */
     transition: opacity 0.5s; /* 可选：添加渐变效果 */
   }
+
+  .choice-image:nth-child(n+5) {
+    flex-basis: calc(25% - 10px); /* 每行五张图片 */
+  }
+
+  .choice-image:nth-child(n+7) {
+    flex-basis: calc(12.5% - 10px); /* 每行八张图片 */
+  }
+
+  .imageName {
+    font-size: 14px; /* 在小屏幕上减小文字大小 */
+    font-weight: bolder;
+  }
 }
+@media (min-width: 768px) {
+  /* 手机端的断点，可以根据需要调整 */
+  .choice-image {
+    flex-basis: calc(33% - 10px); /* 每排三张图片，减去边距 */
+    margin: 3px;
+  }
+  .images-grid img {
+    width: 108px; /* 减小图片大小 */
+    height: 108px;
+  }
+  .images-to-remember img {
+    width: 108px; /* 调整图片大小 */
+    height: 108px;
+    margin-bottom: 1px; /* 在图片和文字之间添加一些间距 */
+
+  }
+  .choice-image.hide {
+    opacity: 0; /* 使图片完全透明 */
+    visibility: hidden; /* 隐藏图片但保持其占据的空间 */
+    transition: opacity 0.5s; /* 可选：添加渐变效果 */
+  }
+  .choices {
+    width: 80%;
+  }
+}
+
 
 .feedback-icon {
   position: absolute; /* 使图标浮动在图片上方 */
@@ -514,7 +693,7 @@ export default {
 .prompt {
   text-align: center; /* 居中文本 */
   width: 100%; /* 确保宽度充满容器 */
-  margin-bottom: 20px; /* 添加一些下边距 */
+  margin-bottom: 1px; /* 添加一些下边距 */
 }
 
 
@@ -551,58 +730,6 @@ export default {
   height: 30px;
   margin-right: 10px;
 }
-@media (max-width: 376px) {
-  .choice-image {
-    flex-basis: calc(33% - 10px); /* 每排三张图片，减去边距 */
-    margin: 3px;
-  }
-  /* 其他样式调整 */
-}
-
-@media (max-width: 767px) {
-  /* 手机端的断点，可以根据需要调整 */
-  .choice-image {
-    flex-basis: calc(33% - 10px); /* 每排三张图片，减去边距 */
-    margin: 3px;
-  }
-  /* 其他样式调整 */
-}
-@media (max-width: 375px) {
-  .timer, .score {
-    top: 5px;
-    font-size: 14px;
-  }
-
-  .timer {
-    right: 5px;
-  }
-
-  .timer img, .score img {
-    width: 20px;
-    height: 20px;
-  }
-
-  .score {
-    left: 5px;
-  }
-
-  .score {
-    top: 5px;
-    left: 5px;
-    font-size: 16px;
-  }
-
-  .score img {
-    width: 25px;
-    height: 25px;
-  }
-
-  .choice-image.hide {
-    opacity: 0; /* 使图片完全透明 */
-    visibility: hidden; /* 隐藏图片但保持其占据的空间 */
-    transition: opacity 0.5s; /* 可选：添加渐变效果 */
-  }
-}
 
 .type-badge {
   display: inline-block;
@@ -610,7 +737,7 @@ export default {
   margin: 2px;
   border-radius: 10px;
   color: white;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: bolder;
   text-align: center;
 }
@@ -764,24 +891,97 @@ export default {
 .fairy {
   background-color: #EE99AC;
 }
-.border-normal { border: 4px solid rgba(175, 175, 129, 0.5);border-radius: 10px; }
-.border-fire { border: 4px solid rgba(240, 128, 48, 0.5); border-radius: 10px;}
-.border-water { border: 4px solid rgba(104, 144, 240, 0.5);border-radius: 10px; }
-.border-electric { border: 4px solid rgba(241, 202, 46, 0.5);border-radius: 10px; }
-.border-grass { border: 4px solid rgba(120, 200, 80, 0.5); border-radius: 10px;}
-.border-ice { border: 4px solid rgba(152, 216, 216, 0.5); border-radius: 10px;}
-.border-fighting { border: 4px solid rgba(192, 48, 40, 0.5); border-radius: 10px;}
-.border-poison { border: 4px solid rgba(160, 64, 160, 0.5); border-radius: 10px;}
-.border-ground { border: 4px solid rgba(225, 191, 96, 0.5); border-radius: 10px;}
-.border-flying { border: 4px solid rgba(168, 144, 240, 0.5); border-radius: 10px;}
-.border-psychic { border: 4px solid rgba(248, 88, 136, 0.5); border-radius: 10px;}
-.border-bug { border: 4px solid rgba(168, 184, 32, 0.5); border-radius: 10px;}
-.border-rock { border: 4px solid rgba(184, 160, 56, 0.5); border-radius: 10px;}
-.border-ghost { border: 4px solid rgba(112, 88, 152, 0.5); border-radius: 10px;}
-.border-dragon { border: 4px solid rgba(112, 56, 248, 0.5); border-radius: 10px;}
-.border-dark { border: 4px solid rgba(112, 88, 72, 0.5); border-radius: 10px;}
-.border-steel { border: 4px solid rgba(184, 184, 208, 0.5); border-radius: 10px;}
-.border-fairy { border: 4px solid rgba(238, 153, 172, 0.5); border-radius: 10px;}
+
+.border-normal {
+  border: 4px solid rgba(175, 175, 129, 0.5);
+  border-radius: 10px;
+}
+
+.border-fire {
+  border: 4px solid rgba(240, 128, 48, 0.5);
+  border-radius: 10px;
+}
+
+.border-water {
+  border: 4px solid rgba(104, 144, 240, 0.5);
+  border-radius: 10px;
+}
+
+.border-electric {
+  border: 4px solid rgba(241, 202, 46, 0.5);
+  border-radius: 10px;
+}
+
+.border-grass {
+  border: 4px solid rgba(120, 200, 80, 0.5);
+  border-radius: 10px;
+}
+
+.border-ice {
+  border: 4px solid rgba(152, 216, 216, 0.5);
+  border-radius: 10px;
+}
+
+.border-fighting {
+  border: 4px solid rgba(192, 48, 40, 0.5);
+  border-radius: 10px;
+}
+
+.border-poison {
+  border: 4px solid rgba(160, 64, 160, 0.5);
+  border-radius: 10px;
+}
+
+.border-ground {
+  border: 4px solid rgba(225, 191, 96, 0.5);
+  border-radius: 10px;
+}
+
+.border-flying {
+  border: 4px solid rgba(168, 144, 240, 0.5);
+  border-radius: 10px;
+}
+
+.border-psychic {
+  border: 4px solid rgba(248, 88, 136, 0.5);
+  border-radius: 10px;
+}
+
+.border-bug {
+  border: 4px solid rgba(168, 184, 32, 0.5);
+  border-radius: 10px;
+}
+
+.border-rock {
+  border: 4px solid rgba(184, 160, 56, 0.5);
+  border-radius: 10px;
+}
+
+.border-ghost {
+  border: 4px solid rgba(112, 88, 152, 0.5);
+  border-radius: 10px;
+}
+
+.border-dragon {
+  border: 4px solid rgba(112, 56, 248, 0.5);
+  border-radius: 10px;
+}
+
+.border-dark {
+  border: 4px solid rgba(112, 88, 72, 0.5);
+  border-radius: 10px;
+}
+
+.border-steel {
+  border: 4px solid rgba(184, 184, 208, 0.5);
+  border-radius: 10px;
+}
+
+.border-fairy {
+  border: 4px solid rgba(238, 153, 172, 0.5);
+  border-radius: 10px;
+}
+
 .lives img {
   width: 30px;
   height: 30px;
